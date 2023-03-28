@@ -23,6 +23,7 @@ class Environment:
                                                    alpha=.5,
                                                    radius=self.goal_threshold)
         self.complete=False
+        self.predator=None
         if has_predator:
             paths_builder = Paths_builder.get_from_name("hexagonal", world_name)
             self.predator = Predator(self.world,
@@ -95,9 +96,10 @@ class Environment:
         self.model.stop()
 
     def show(self) -> None:
-        if self.predator.destination:
-            self.predator_destination.set(center=(self.predator.destination.x, self.predator.destination.y), color="b")
-        if self.predator.destination_cell:
-            self.predator_destination_cell.set(center=(self.predator.destination_cell.location.x, self.predator.destination_cell.location.y), color="g")
-        self.predator_capture_area.set(center=(self.model.agents_data["predator"].location.x, self.model.agents_data["predator"].location.y), color="r")
+        if self.predator:
+            if self.predator.destination:
+                self.predator_destination.set(center=(self.predator.destination.x, self.predator.destination.y), color="b")
+            if self.predator.destination_cell:
+                self.predator_destination_cell.set(center=(self.predator.destination_cell.location.x, self.predator.destination_cell.location.y), color="g")
+            self.predator_capture_area.set(center=(self.model.agents_data["predator"].location.x, self.model.agents_data["predator"].location.y), color="r")
         self.model.show()
