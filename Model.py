@@ -94,6 +94,12 @@ class Model:
                                show_trajectory=False)
         self.display.update()
 
+    def set_agent_position(self, pagent_name: str,
+                           plocation: Location,
+                           ptheta: float):
+        self.agents_data[pagent_name].location = plocation
+        self.agents_data[pagent_name].theta = ptheta
+
     def add_agent(self,
                   pagent_name: str,
                   pagent: Agent,

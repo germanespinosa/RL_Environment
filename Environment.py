@@ -17,13 +17,12 @@ class Environment:
         self.has_predator = has_predator
         self.goal_threshold = self.world.implementation.cell_transformation.size / 2
         self.capture_threshold = self.world.implementation.cell_transformation.size
-        self.model.add_agent("prey", None, self.start_location, math.pi/2, "b", pauto_update=False)
+        self.model.add_agent("prey", None, Location(0,0), 0, "b", pauto_update=False)
         self.goal_area = self.model.display.circle(location=self.goal_location,
                                                    color="g",
                                                    alpha=.5,
                                                    radius=self.goal_threshold)
-        self.complete=False
-        self.predator=None
+        self.predator = None
         if has_predator:
             paths_builder = Paths_builder.get_from_name("hexagonal", world_name)
             self.predator = Predator(self.world,
@@ -39,12 +38,10 @@ class Environment:
             for c in self.world.cells.free_cells():
                 if not self.model.visibility.is_visible(self.start_location, c.location):
                     self.spawn_locations.append(c.location)
-            predator_location = random.choice(self.spawn_locations)
-            predator_theta = math.pi * 2 * random.random()
-            self.model.add_agent("predator", self.predator, predator_location, predator_theta, "r")
-            self.predator_destination = self.model.display.circle(location=predator_location, color="b", alpha=.5, radius=0.01)
-            self.predator_destination_cell = self.model.display.circle(location=predator_location, color="g", alpha=.5, radius=0.02)
-            self.predator_capture_area = self.model.display.circle(location=predator_location, color="r", alpha=.5, radius=self.capture_threshold)
+            self.model.add_agent("predator", self.predator, Location(0, 0), 0, "r")
+            self.predator_destination = self.model.display.circle(location=Location(0,0), color="b", alpha=.5, radius=0.01)
+            self.predator_destination_cell = self.model.display.circle(location=Location(0,0), color="g", alpha=.5, radius=0.02)
+            self.predator_capture_area = self.model.display.circle(location=Location(0,0), color="r", alpha=.5, radius=self.capture_threshold)
 
     def is_goal_reached(self, prey_location: Location):
         return prey_location.dist(self.goal_location) <= self.goal_threshold
@@ -90,6 +87,12 @@ class Environment:
         self.model.set_agent_action("prey", action)
 
     def run(self) -> None:
+        self.complete = False
+        self.model.set_agent_position("prey", self.start_location, math.pi / 2)
+        if self.has_predator:
+            predator_location = random.choice(self.spawn_locations)
+            predator_theta = math.pi * 2 * random.random()
+            self.model.set_agent_position("predator", predator_location,predator_theta)
         self.model.run()
 
     def stop(self) -> None:
