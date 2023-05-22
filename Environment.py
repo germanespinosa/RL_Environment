@@ -87,13 +87,19 @@ class Environment:
         self.model.set_agent_action("prey", action)
 
     def run(self) -> None:
+        self.start()
+        self.model.run()
+
+    def start(self) -> None:
         self.complete = False
         self.model.set_agent_position("prey", self.start_location, math.pi / 2)
         if self.has_predator:
             predator_location = random.choice(self.spawn_locations)
             predator_theta = math.pi * 2 * random.random()
             self.model.set_agent_position("predator", predator_location, predator_theta)
-        self.model.run()
+
+    def step(self) -> None:
+        self.model.step()
 
     def stop(self) -> None:
         self.model.stop()

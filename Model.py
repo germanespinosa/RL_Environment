@@ -57,19 +57,21 @@ class Model:
         t = Timer(self.interval)
         while self.running:
             t.reset()
-            for agent_name in self.agents.keys():
-                if self.agents_data[agent_name].auto_update:
-                    action = self.agents[agent_name].get_action(self.get_observation(agent_name))
-                    self.agents_data[agent_name].speed = action.speed
-                    self.agents_data[agent_name].turning_speed = action.turning_speed
-            for agent_name in self.agents.keys():
-                self.__move_agent__(agent_name)
+            self.step()
             if self.real_time:
                 pending_wait = self.interval - t.to_seconds()
                 if pending_wait > 0:
                     time.sleep(pending_wait)
 
 
+    def step(self):
+        for agent_name in self.agents.keys():
+            if self.agents_data[agent_name].auto_update:
+                action = self.agents[agent_name].get_action(self.get_observation(agent_name))
+                self.agents_data[agent_name].speed = action.speed
+                self.agents_data[agent_name].turning_speed = action.turning_speed
+        for agent_name in self.agents.keys():
+            self.__move_agent__(agent_name)
 
     def set_agent_action(self, agent_name: str, action: AgentAction):
         self.agents_data[agent_name].speed = action.speed
