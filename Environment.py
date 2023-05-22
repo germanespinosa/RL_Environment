@@ -9,15 +9,15 @@ import random
 
 
 class Environment:
-    def __init__(self, world_name: str, freq: int = 100, has_predator: bool = False):
+    def __init__(self, world_name: str, freq: int = 100, has_predator: bool = False, real_time: bool = True, prey_agent:Agent=None):
         self.world = World.get_from_parameters_names("hexagonal", "canonical", world_name)
-        self.model = Model(self.world, freq)
+        self.model = Model(pworld=self.world, freq=freq, real_time=real_time)
         self.goal_location = Location(1, .5)
         self.start_location = Location(0, .5)
         self.has_predator = has_predator
         self.goal_threshold = self.world.implementation.cell_transformation.size / 2
         self.capture_threshold = self.world.implementation.cell_transformation.size
-        self.model.add_agent("prey", None, Location(0,0), 0, "b", pauto_update=False)
+        self.model.add_agent("prey", prey_agent, Location(0,0), 0, "b", pauto_update=prey_agent is not None)
         self.goal_area = self.model.display.circle(location=self.goal_location,
                                                    color="g",
                                                    alpha=.5,
@@ -92,7 +92,7 @@ class Environment:
         if self.has_predator:
             predator_location = random.choice(self.spawn_locations)
             predator_theta = math.pi * 2 * random.random()
-            self.model.set_agent_position("predator", predator_location,predator_theta)
+            self.model.set_agent_position("predator", predator_location, predator_theta)
         self.model.run()
 
     def stop(self) -> None:

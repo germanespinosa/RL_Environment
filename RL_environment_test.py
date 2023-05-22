@@ -1,9 +1,23 @@
 import time
 from Environment import Environment
+from Agent import Agent, AgentAction
 from cellworld import *
 
+call_counter=0
+
+class PreyAgent(Agent):
+    def get_action(self, observation: dict) -> AgentAction:
+        global call_counter
+        call_counter+=1
+        if call_counter % 100 == 0:
+            print (call_counter)
+        #print(observation)
+        return AgentAction(.2, .2)
+
 #creates the environment
-e = Environment("21_05", freq=100, has_predator=True)
+
+prey_agent=PreyAgent()
+e = Environment("21_05", freq=100, has_predator=True, real_time=False, prey_agent=prey_agent)
 
 for i in range(2):
     #runs the environment
@@ -14,9 +28,7 @@ for i in range(2):
         #starts a timer
         t = Timer()
         #reads an observation from the environment.
-        observation = e.get_observation()
         #sets an action for the prey
-        e.set_action(speed=.2, turning=.2)
         #speed float in habitat lenghts per second.
         #turning float in radians per second
         e.show()
@@ -25,7 +37,6 @@ for i in range(2):
         if remaining_wait > 0:
             time.sleep(remaining_wait)
 
-        print(observation)
         # observation format: Tuple
         # [prey location, prey theta, goal location, predator location, predator theta, captured, goal_reached]
         # prey location: Type Location

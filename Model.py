@@ -7,7 +7,9 @@ class Model:
 
     def __init__(self,
                  pworld: World,
-                 freq: int = 100):
+                 freq: int = 100,
+                 real_time: bool = False):
+        self.real_time = real_time
         self.world = pworld
         self.agents = dict()
         self.agents_data = dict()
@@ -60,10 +62,14 @@ class Model:
                     action = self.agents[agent_name].get_action(self.get_observation(agent_name))
                     self.agents_data[agent_name].speed = action.speed
                     self.agents_data[agent_name].turning_speed = action.turning_speed
+            for agent_name in self.agents.keys():
                 self.__move_agent__(agent_name)
-            pending_wait = self.interval-t.to_seconds()
-            if pending_wait > 0:
-                time.sleep(pending_wait)
+            if self.real_time:
+                pending_wait = self.interval - t.to_seconds()
+                if pending_wait > 0:
+                    time.sleep(pending_wait)
+
+
 
     def set_agent_action(self, agent_name: str, action: AgentAction):
         self.agents_data[agent_name].speed = action.speed
