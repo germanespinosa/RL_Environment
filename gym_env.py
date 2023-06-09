@@ -136,7 +136,7 @@ class Environment(Env):
 
     def reset(self):
         self.close()
-        self.run()
+        self.start()
         obs = []
         location, theta, goal_location, goal_reached = self.get_observation()
         obs.append(location.x)
@@ -146,7 +146,7 @@ class Environment(Env):
         obs = np.array(obs)
         obs = obs.astype('float32')
         self.current_step = 1
-        self.model.stop()
+        self.stop()
         # time.sleep(.001)
         return obs, {}
 
