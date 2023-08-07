@@ -31,7 +31,7 @@ class Environment:
                                      pP_value=2,
                                      pI_value=0,
                                      pD_value=0,
-                                     pmax_speed=.15,
+                                     pmax_speed=1.5,
                                      pmax_turning_speed=math.pi)
 
             self.spawn_locations = Location_list()
@@ -55,6 +55,16 @@ class Environment:
         goal_reached = self.is_goal_reached(prey.location)
         if goal_reached:
             self.complete = True
+
+        occlusions = Location_list([c.location for c in self.world.cells if c.occluded])
+        occlusions.sort(key=lambda a: a.dist(prey.location))
+        visible_occlusions = []
+        for occlusion in occlusions:
+            diff, direc = angle_difference(prey.location.atan(occlusion),prey.theta)
+            visible_occlusions.append((prey.location.dist(occlusion), diff * direc))
+            if len(visible_occlusions) == 3:# change this for any number of obstacles
+                break
+
         if self.has_predator:
             if o["predator"]:
                 predator = o["predator"]
@@ -67,7 +77,8 @@ class Environment:
                        predator.location, \
                        predator.theta, \
                        captured, \
-                       goal_reached
+                       goal_reached, \
+                       visible_occlusions
             else:
                 return prey.location, \
                        prey.theta, \
@@ -75,7 +86,8 @@ class Environment:
                        None, \
                        None, \
                        False, \
-                       goal_reached
+                       goal_reached, \
+                       visible_occlusions
         else:
             return prey.location, prey.theta, self.goal_location, goal_reached
 
