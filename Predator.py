@@ -70,7 +70,7 @@ class Predator(Agent):
         if turning_speed > self.max_turning_speed:
             turning_speed = self.max_turning_speed
         turning_speed = turning_speed * (-direction)
-        speed = self.normalized_error(theta_error) * dist_error
+        speed = self.normalized_error(theta_error) * (1 + dist_error)
         if speed > self.max_speed:
             speed = self.max_speed
         self.last_theta = predator.theta
