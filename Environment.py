@@ -3,7 +3,7 @@ import math
 from Predator import Predator
 from Agent import *
 from Model import Model
-from Paths import *
+from myPaths import *
 from cellworld import *
 import random
 

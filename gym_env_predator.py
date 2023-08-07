@@ -11,12 +11,12 @@ import numpy as np
 
 
 class Environment(Env):
-    def __init__(self, world_name: str, freq: int = 100, has_predator: bool = False, real_time: bool = False, prey_agent:Agent=None, max_step = 200):
+    def __init__(self, world_name: str, freq: int = 100, has_predator: bool = True, real_time: bool = False, prey_agent:Agent=None, max_step = 200):
         self.world = World.get_from_parameters_names("hexagonal", "canonical", world_name)
         self.model = Model(pworld=self.world, freq=freq, real_time=real_time)
         self.goal_location = Location(1, .5)
         self.start_location = Location(0, .5)
-        self.observation_space = spaces.Box(-np.inf, np.inf, (4,), dtype=np.float32)
+        self.observation_space = spaces.Box(-np.inf, np.inf, (10,), dtype=np.float32)
         self.action_space = spaces.Box(-1, 1, (2,), np.float32)
         self.has_predator = has_predator
         self.max_step = max_step
@@ -39,7 +39,7 @@ class Environment(Env):
                                      pP_value=2,
                                      pI_value=0,
                                      pD_value=0,
-                                     pmax_speed=.15,
+                                     pmax_speed=2, #0.5 is defaoult
                                      pmax_turning_speed=math.pi)
 
             self.spawn_locations = Location_list()
@@ -111,18 +111,24 @@ class Environment(Env):
         speed, turning = action[0], action[1]
         self.set_action(speed, turning)
         self.model.step()
-        location, theta, goal_location, goal_reached = self.get_observation()
-        obs = np.array([location.x, location.y, goal_location.x, goal_location.y], dtype=np.float32)
+        prey_location, prey_theta, goal_location, pred_location, pred_theta, captured, goal_reached = self.get_observation()
+        if pred_location is not None:
+            obs = np.array([prey_location.x, prey_location.y, prey_theta, action[0], action[1], pred_location.x, pred_location.y, pred_theta, goal_location.x, goal_location.y], dtype=np.float32)
+        else:
+            obs = np.array([prey_location.x, prey_location.y, prey_theta, action[0], action[1], -1.0, -1.0, 0, goal_location.x, goal_location.y], dtype=np.float32)
         dx = abs(obs[0] - 1)
         dy = abs(obs[1] - 0.5)
         d = math.sqrt(dx ** 2 + dy ** 2)
-        # d_reward = -d
-        if self.is_goal_reached(location):
+        # reach the goal
+        if self.is_goal_reached(prey_location):
             reward = 100
             done = True
         else:
             reward = -d
-        info = {"is success": done}
+        if captured:
+            truncated = True
+            reward = -100
+        info = {"is success": done, "is truncated": truncated}
         self.current_step += 1
         if self.current_step > self.max_step:
             truncated = True
@@ -134,8 +140,11 @@ class Environment(Env):
 
     def reset(self, seed = None):
         self.start()
-        location, theta, goal_location, goal_reached = self.get_observation()
-        obs = np.array([location.x, location.y, goal_location.x, goal_location.y], dtype=np.float32)
+        prey_location, prey_theta, goal_location, pred_location, pred_theta, captured, goal_reached = self.get_observation()
+        if pred_location is not None:
+            obs = np.array([prey_location.x, prey_location.y, prey_theta, 0.0, 0.0, pred_location.x, pred_location.y, pred_theta, goal_location.x, goal_location.y], dtype=np.float32)
+        else:
+            obs = np.array([prey_location.x, prey_location.y, prey_theta, 0.0, 0.0, -1.0, -1.0, 0, goal_location.x, goal_location.y], dtype=np.float32)
         self.current_step = 1
         self.stop()
         return obs, {}

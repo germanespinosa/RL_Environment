@@ -1,5 +1,5 @@
 from cellworld import Location
-from Paths import *
+from myPaths import *
 from random import choice
 from Agent import *
 
@@ -15,7 +15,7 @@ class Predator(Agent):
                  pmax_speed: float = .4,
                  pmax_turning_speed: float = .2):
         self.world = pworld
-        self.paths = Paths(ppath_builder, pworld)
+        self.paths = myPaths(ppath_builder, pworld)
         self.visibility = pvisibility
         self.destination = None
         self.destination_cell = None

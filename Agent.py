@@ -4,7 +4,7 @@ from cellworld import *
 class AgentAction(JsonObject):
     def __init__(self, speed: float = 0, turning_speed: float = 0):
         self.speed = speed
-        self.turning_speed = turning_speed
+        self.turning_speed = turning_speed*10
 
 
 class AgentData(JsonObject):

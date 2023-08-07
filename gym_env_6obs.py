@@ -16,7 +16,7 @@ class Environment(Env):
         self.model = Model(pworld=self.world, freq=freq, real_time=real_time)
         self.goal_location = Location(1, .5)
         self.start_location = Location(0, .5)
-        self.observation_space = spaces.Box(-np.inf, np.inf, (4,), dtype=np.float32)
+        self.observation_space = spaces.Box(-np.inf, np.inf, (7,), dtype=np.float32)
         self.action_space = spaces.Box(-1, 1, (2,), np.float32)
         self.has_predator = has_predator
         self.max_step = max_step
@@ -112,7 +112,7 @@ class Environment(Env):
         self.set_action(speed, turning)
         self.model.step()
         location, theta, goal_location, goal_reached = self.get_observation()
-        obs = np.array([location.x, location.y, goal_location.x, goal_location.y], dtype=np.float32)
+        obs = np.array([location.x, location.y, theta, action[0], action[1], goal_location.x, goal_location.y], dtype=np.float32)
         dx = abs(obs[0] - 1)
         dy = abs(obs[1] - 0.5)
         d = math.sqrt(dx ** 2 + dy ** 2)
@@ -135,7 +135,7 @@ class Environment(Env):
     def reset(self, seed = None):
         self.start()
         location, theta, goal_location, goal_reached = self.get_observation()
-        obs = np.array([location.x, location.y, goal_location.x, goal_location.y], dtype=np.float32)
+        obs = np.array([location.x, location.y, theta, 0.0, 0.0, goal_location.x, goal_location.y], dtype=np.float32)
         self.current_step = 1
         self.stop()
         return obs, {}
