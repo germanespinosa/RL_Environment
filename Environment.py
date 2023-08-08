@@ -56,14 +56,16 @@ class Environment:
         if goal_reached:
             self.complete = True
 
-        occlusions = Location_list([c.location for c in self.world.cells if c.occluded])
-        occlusions.sort(key=lambda a: a.dist(prey.location))
-        visible_occlusions = []
-        for occlusion in occlusions:
-            diff, direc = angle_difference(prey.location.atan(occlusion),prey.theta)
-            visible_occlusions.append((prey.location.dist(occlusion), diff * direc))
-            if len(visible_occlusions) == 3:# change this for any number of obstacles
-                break
+        # occlusions = Location_list([c.location for c in self.world.cells if c.occluded])
+        occlusions = Location_list([(c.location.dist(prey.location), c.location) for c in self.world.cells if c.occluded])
+        occlusions.sort(key=lambda a: a[0])
+
+        def dif_dir(a,b):
+            diff, direc = angle_difference(a, b)
+            return diff * direc
+
+        max_number_of_occlusions_in_observation = 3
+        closest_occlusions = [(c[0], dif_dir(prey.location.atan(c[1]), prey.theta)) for c in occlusions[:min(len(occlusions), max_number_of_occlusions_in_observation)]]
 
         if self.has_predator:
             if o["predator"]:
@@ -78,7 +80,7 @@ class Environment:
                        predator.theta, \
                        captured, \
                        goal_reached, \
-                       visible_occlusions
+                       closest_occlusions
             else:
                 return prey.location, \
                        prey.theta, \
@@ -87,7 +89,7 @@ class Environment:
                        None, \
                        False, \
                        goal_reached, \
-                       visible_occlusions
+                       closest_occlusions
         else:
             return prey.location, prey.theta, self.goal_location, goal_reached
 
