@@ -1,10 +1,7 @@
-import time
-from gym_env_6obs import Environment
+from gym_env import Environment
+#from gym_env_6obs import Environment
 #from gym_env_predator import Environment
 from cellworld import *
-import time
-import gymnasium as gym
-import matplotlib.pyplot as plt
 import numpy as np
 from stable_baselines3 import PPO
 from stable_baselines3 import SAC
@@ -42,11 +39,13 @@ def check():
 
 def random_policy():
     done = False
-    env = Environment("16_06", freq=100, has_predator=True)
+    env = Environment(freq=100, has_predator=False)
     env.reset()
     #while not done:
     for i in range(5000):
         obs, reward, done, _, _ = env.step([1, 0])
+        if i%20==0:
+            env.reset()
         #obs, reward, done, _, _ = wrapped_env.step(wrapped_env.action_space.sample())
         env.show()
     env.close()
@@ -68,9 +67,30 @@ def PPO_train():
     plot(env.episode_reward_history, name="16_05_reward-100_PPO")
     model.save("1605PPO_model")
     env.close()
+def SAC_train_random_env():
+    # we train it on 0-19, and test it on 20-30
+    env = Environment(e=5, has_predator=False, max_step=300, env_type="train")
+    sigma = 0.1 # Adjust this value to increase the noise level
+    action_noise = NormalActionNoise(mean=np.zeros(env.action_space.shape), sigma=sigma * np.ones(env.action_space.shape))
+    model = SAC("MlpPolicy", # batchsize
+                env,
+                verbose=1,
+                batch_size = 512,
+                learning_rate= 3e-4,
+                train_freq=(1, "step"),
+                buffer_size=2500000,
+                replay_buffer_class=ReplayBuffer,
+                action_noise=action_noise,  # noise level
+                policy_kwargs={"net_arch": [128, 256, 128]} # the network
+                )
+    callback = EarlyStoppingCallback(check_freq=3000, stop_reward=300)
+    model.learn(total_timesteps=1500000, log_interval=10, callback=callback)
+    plot(env.episode_reward_history, name="50_SAC")
+    model.save("50_SAC")
+    env.close()
 
 def SAC_train():
-    env = Environment("16_07", freq=100, has_predator=False, max_step=300)
+    env = Environment("17_09", freq=100, has_predator=False, max_step=300)
     env.reset()
     sigma = 0.1 # Adjust this value to increase the noise level
     action_noise = NormalActionNoise(mean=np.zeros(env.action_space.shape), sigma=sigma * np.ones(env.action_space.shape))
@@ -85,10 +105,11 @@ def SAC_train():
                 action_noise=action_noise,  # noise level
                 policy_kwargs={"net_arch": [128, 256, 128]} # the network
                 )
+    model = SAC.load("1709", env)
     callback = EarlyStoppingCallback(check_freq=5000, stop_reward=300)
-    model.learn(total_timesteps=500000, log_interval=20, callback=callback)
-    plot(env.episode_reward_history, name="1607_SAC_reward")
-    model.save("1607")
+    model.learn(total_timesteps=1000000, log_interval=20, callback=callback)
+    plot(env.episode_reward_history, name="1709_SAC_reward")
+    model.save("1709")
     env.close()
 
 def plot(data, name ="result"):
@@ -109,11 +130,11 @@ def plot(data, name ="result"):
 
 def result_visualization():
     # from stable_baselines3.common.evaluation import evaluate_policy
-    np.random.seed(123)
-    env = Environment("16_07", freq=100, has_predator=False, max_step=250)
+    # env_type="train"
+    env = Environment(freq=100, has_predator=False, max_step=250, env_type="train")
     #loaded_model = SAC.load("1601_SAC_pre-tun.zip")
     #model = SAC("MlpPolicy", verbose=1, env = env, seed=123, learning_rate=0.0003)
-    loaded_model = SAC.load("1607")
+    loaded_model = SAC.load("50_SAC_pre-tun-1")
     #loaded_model = PPO.load("16_04_predator_PPO.zip")
     #model.set_parameters("stable_sac")
     obs, _ = env.reset()
@@ -150,9 +171,9 @@ def check_prediction():
 
 if __name__ == "__main__":
     #check()
-    #SAC_train()
-    result_visualization()
-    #random_policy()
+    SAC_train_random_env() # SAC_train()
+    # result_visualization()
+    # random_policy()
     #evaluate()
     #check_prediction()
     #PPO_train()
