@@ -4,7 +4,8 @@
 
 ```{python}
 from gym_env import Environment
-env = Environment("16_01", freq=100, has_predator=False, max_step=250)
+# e = 1: Entropy 10%
+env = Environment(e = 1, freq=100, has_predator=False, max_step=250, env_type = "train")
 env.reset()
 
 # Random
@@ -25,7 +26,7 @@ env.close()
 
 ```{python}
 from gym_env import Environment
-env = Environment("16_09", freq=100, has_predator=False, max_step=250)
+env = Environment(e = 9, freq=100, has_predator=False, max_step=250, env_type = "train")
 env.reset()
 # Random
 env.step(env.action_space.sample())
