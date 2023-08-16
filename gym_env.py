@@ -124,31 +124,72 @@ class Environment(Env):
         done, truncated = False, False
         speed, turning = action[0], action[1]
         self.set_action(speed, turning)
-        self.model.step()
-        location, theta, goal_location, goal_reached, closest_occlusions = self.get_observation()
-        closest_distance,  closest_angle = closest_occlusions[0]
-        se_closest_distance, se_closest_angle = closest_occlusions[1]
-        th_closest_distance, th_closest_angle = closest_occlusions[2]
-        obs = np.array(
-            [location.x, location.y, theta, 0.0, 0.0, closest_distance, closest_angle, se_closest_distance,
-             se_closest_angle, th_closest_distance, th_closest_angle],
-            dtype=np.float32)
-        dx = abs(obs[0] - 1)
-        dy = abs(obs[1] - 0.5)
-        d = math.sqrt(dx ** 2 + dy ** 2)
-        if self.is_goal_reached(location):
-            reward = 100
-            done = True
+        if self.has_predator:
+            self.model.step()
+            prey_location, prey_theta, \
+                goal_location, pred_location, \
+                pred_theta, captured, \
+                goal_reached, closest_occlusions = self.get_observation()
+            closest_distance, closest_angle = closest_occlusions[0]
+            se_closest_distance, se_closest_angle = closest_occlusions[1]
+            th_closest_distance, th_closest_angle = closest_occlusions[2]
+            if pred_location is not None:
+                obs = np.array(
+                    [prey_location.x, prey_location.y, prey_theta, 0.0, 0.0, pred_location.x, pred_location.y,
+                     pred_theta, closest_distance, closest_angle,
+                     se_closest_distance, se_closest_angle,
+                     th_closest_distance, th_closest_angle], dtype=np.float32)
+            else:
+                obs = np.array(
+                    [prey_location.x, prey_location.y, prey_theta, 0.0, 0.0, -1.0, -1.0, 0.0, closest_distance,
+                     closest_angle,
+                     se_closest_distance, se_closest_angle,
+                     th_closest_distance, th_closest_angle], dtype=np.float32)
+                dx, dy = abs(obs[0] - 1), abs(obs[1] - 0.5)
+                d = math.sqrt(dx ** 2 + dy ** 2)
+                # reach the goal
+                if self.is_goal_reached(prey_location):
+                    reward = 100
+                    done = True
+                else:
+                    reward = -d
+                if captured:
+                    truncated = True
+                    reward = -100
+                info = {"is success": done, "is truncated": truncated}
+                self.current_step += 1
+                if self.current_step > self.max_step:
+                    truncated = True
+                self.current_episode_reward += reward
+                if done or truncated:
+                    self.episode_reward_history.append(self.current_episode_reward)
+                    self.current_episode_reward = 0
         else:
-            reward = -d
-        info = {"is success": done}
-        self.current_step += 1
-        if self.current_step > self.max_step:
-            truncated = True
-        self.current_episode_reward += reward
-        if done or truncated:
-            self.episode_reward_history.append(self.current_episode_reward)
-            self.current_episode_reward = 0
+            self.model.step()
+            location, theta, goal_location, goal_reached, closest_occlusions = self.get_observation()
+            closest_distance,  closest_angle = closest_occlusions[0]
+            se_closest_distance, se_closest_angle = closest_occlusions[1]
+            th_closest_distance, th_closest_angle = closest_occlusions[2]
+            obs = np.array(
+                [location.x, location.y, theta, 0.0, 0.0, closest_distance, closest_angle, se_closest_distance,
+                 se_closest_angle, th_closest_distance, th_closest_angle],
+                dtype=np.float32)
+            dx = abs(obs[0] - 1)
+            dy = abs(obs[1] - 0.5)
+            d = math.sqrt(dx ** 2 + dy ** 2)
+            if self.is_goal_reached(location):
+                reward = 100
+                done = True
+            else:
+                reward = -d
+            info = {"is success": done}
+            self.current_step += 1
+            if self.current_step > self.max_step:
+                truncated = True
+            self.current_episode_reward += reward
+            if done or truncated:
+                self.episode_reward_history.append(self.current_episode_reward)
+                self.current_episode_reward = 0
         return obs, reward, done, truncated, info
 
     def reset(self, seed=None):
@@ -161,50 +202,79 @@ class Environment(Env):
             world_name = "%02i_%02i" % (random.randint(20, 21), e)
         self.world = World.get_from_parameters_names("hexagonal", "canonical", world_name)
         self.model = Model(pworld=self.world, freq=self.freq, real_time=self.real_time)
+        self.goal_location = Location(1, .5)
+        self.start_location = Location(0, .5)
         self.model.add_agent("prey",
                              self.prey_agent,
                              Location(0, 0), 0, "b",
                              pauto_update=self.prey_agent is not None)
-        # if self.has_predator:
-        #     paths_builder = Paths_builder.get_from_name("hexagonal", world_name)
-        #     self.predator = Predator(self.world,
-        #                              ppath_builder=paths_builder,
-        #                              pvisibility=self.model.visibility,
-        #                              pP_value=2,
-        #                              pI_value=0,
-        #                              pD_value=0,
-        #                              pmax_speed=self.predator_speed,
-        #                              pmax_turning_speed=math.pi)
-        #
-        #     self.spawn_locations = Location_list()
-        #     for c in self.world.cells.free_cells():
-        #         if not self.model.visibility.is_visible(self.start_location, c.location):
-        #             self.spawn_locations.append(c.location)
-        #     self.model.add_agent("predator", self.predator, Location(0, 0), 0, "r")
-        #     self.predator_destination = self.model.display.circle(location=Location(0,0),
-        #                                                           color="b",
-        #                                                           alpha=.5,
-        #                                                           radius=0.01)
-        #     self.predator_destination_cell = self.model.display.circle(location=Location(0,0),
-        #                                                                color="g",
-        #                                                                alpha=.5,
-        #                                                                radius=0.02)
-        #     self.predator_capture_area = self.model.display.circle(location=Location(0,0),
-        #                                                            color="r",
-        #                                                            alpha=.5,
-        #                                                            radius=self.capture_threshold)
-        self.start()
-        location, theta, goal_location, goal_reached, closest_occlusions = self.get_observation()
-        closest_distance,  closest_angle = closest_occlusions[0]
-        se_closest_distance, se_closest_angle = closest_occlusions[1]
-        th_closest_distance, th_closest_angle = closest_occlusions[2]
-        obs = np.array(
-            [location.x, location.y, theta,
-             0.0, 0.0,
-             closest_distance, closest_angle,
-             se_closest_distance, se_closest_angle,
-             th_closest_distance, th_closest_angle],
-            dtype=np.float32)
+        self.goal_threshold = self.world.implementation.cell_transformation.size / 2
+        self.capture_threshold = self.world.implementation.cell_transformation.size
+        self.goal_area = self.model.display.circle(location=self.goal_location,
+                                                   color="g",
+                                                   alpha=.5,
+                                                   radius=self.goal_threshold)
+
+        if self.has_predator:
+            paths_builder = Paths_builder.get_from_name("hexagonal", world_name)
+            self.predator = Predator(self.world,
+                                     ppath_builder=paths_builder,
+                                     pvisibility=self.model.visibility,
+                                     pP_value=2,
+                                     pI_value=0,
+                                     pD_value=0,
+                                     pmax_speed=self.predator_speed,
+                                     pmax_turning_speed=math.pi)
+
+            self.spawn_locations = Location_list()
+            for c in self.world.cells.free_cells():
+                if not self.model.visibility.is_visible(self.start_location, c.location):
+                    self.spawn_locations.append(c.location)
+            self.model.add_agent("predator", self.predator, Location(0, 0), 0, "r")
+            self.predator_destination = self.model.display.circle(location=Location(0,0),
+                                                                  color="b",
+                                                                  alpha=.5,
+                                                                  radius=0.01)
+            self.predator_destination_cell = self.model.display.circle(location=Location(0,0),
+                                                                       color="g",
+                                                                       alpha=.5,
+                                                                       radius=0.02)
+            self.predator_capture_area = self.model.display.circle(location=Location(0,0),
+                                                                   color="r",
+                                                                   alpha=.5,
+                                                                   radius=self.capture_threshold)
+            # start has to be here, after all the setup()
+            self.start()
+            prey_location, prey_theta, \
+            goal_location, pred_location, \
+            pred_theta, captured, \
+            goal_reached, closest_occlusions = self.get_observation()
+            closest_distance, closest_angle = closest_occlusions[0]
+            se_closest_distance, se_closest_angle = closest_occlusions[1]
+            th_closest_distance, th_closest_angle = closest_occlusions[2]
+            if pred_location is not None:
+                obs = np.array(
+                    [prey_location.x, prey_location.y, prey_theta, 0.0, 0.0, pred_location.x, pred_location.y,
+                     pred_theta, closest_distance, closest_angle,
+                     se_closest_distance, se_closest_angle,
+                     th_closest_distance, th_closest_angle], dtype=np.float32)
+            else:
+                obs = np.array([prey_location.x, prey_location.y, prey_theta, 0.0, 0.0, -1.0, -1.0, 0.0, closest_distance, closest_angle,
+                                se_closest_distance, se_closest_angle,
+                                th_closest_distance, th_closest_angle], dtype=np.float32)
+        else:
+            self.start()
+            location, theta, goal_location, goal_reached, closest_occlusions = self.get_observation()
+            closest_distance,  closest_angle = closest_occlusions[0]
+            se_closest_distance, se_closest_angle = closest_occlusions[1]
+            th_closest_distance, th_closest_angle = closest_occlusions[2]
+            obs = np.array(
+                [location.x, location.y, theta,
+                 0.0, 0.0,
+                 closest_distance, closest_angle,
+                 se_closest_distance, se_closest_angle,
+                 th_closest_distance, th_closest_angle],
+                dtype=np.float32)
         self.current_step = 1
         self.stop()
         return obs, {}
