@@ -36,6 +36,8 @@ class Predator(Agent):
         if self.destination_cell is None:
             hidden_cells = Cell_group()
             for c in self.world.cells:
+                if c.occluded:
+                    continue
                 if not self.visibility.is_visible(predator_location, c.location):
                     hidden_cells.append(c)
             self.destination_cell = choice(hidden_cells)
