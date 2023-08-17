@@ -121,6 +121,8 @@ class Environment(Env):
             self.model.set_agent_position("predator", predator_location, predator_theta)
 
     def step(self, action):
+        reward = 0
+        info = {}
         done, truncated = False, False
         speed, turning = action[0], action[1]
         self.set_action(speed, turning)
