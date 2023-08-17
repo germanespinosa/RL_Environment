@@ -38,4 +38,7 @@ env.show()
 # close
 env.close()
 ```
-![image](https://github.com/germanespinosa/RL_Environment/assets/80494218/4fb5dcbc-e9f1-4aae-bdab-59c115fdba89)
+<img width="600" alt="image" src="[https://github.com/germanespinosa/RL_Environment/assets/80494218/41e82bb5-8887-4ade-8996-07bdab04329d](https://github.com/germanespinosa/RL_Environment/assets/80494218/b1ebc60e-a4c7-4623-b693-baff09777501)https://github.com/germanespinosa/RL_Environment/assets/80494218/b1ebc60e-a4c7-4623-b693-baff09777501">
+
+
+
