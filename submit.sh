@@ -1,14 +1,14 @@
 #!/bin/bash
-#SBATCH -A p31777
+#SBATCH -A #####
 #SBATCH -p gengpu
 #SBATCH --gres=gpu:a100:1
 #SBATCH -N 1
 #SBATCH -n 1
 #SBATCH -t 12:00:00
 #SBATCH --mem=40G
-#SBATCH --job-name="Shuo_han_diffusion_video\${SLURM_ARRAY_TASK_ID}" ## use the task id in the name of the job
+#SBATCH --job-name="Shuo_han\${SLURM_ARRAY_TASK_ID}" ## use the task id in the name of the job
 #SBATCH --mail-type=ALL ## you can receive e-mail alerts from SLURM when your job begins and when your job finishes (completed, failed, etc)
-#SBATCH --mail-user=shuohan2024@u.northwestern.edu  ## your email
+#SBATCH --mail-user=#####  ## your email
 
 
 
