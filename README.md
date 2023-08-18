@@ -38,4 +38,8 @@ env.show()
 # close
 env.close()
 ```
-<img width="600" alt="image" src="https://github.com/germanespinosa/RL_Environment/assets/80494218/8cc59752-2580-4f85-81ec-7c556520dfe5">
+<img width="600" alt="image" src="https://github.com/germanespinosa/RL_Environment/assets/80494218/238fe286-262b-4de7-bb17-187460bedb08">
+
+
+
+
