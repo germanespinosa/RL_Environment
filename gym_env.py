@@ -147,25 +147,25 @@ class Environment(Env):
                      closest_angle,
                      se_closest_distance, se_closest_angle,
                      th_closest_distance, th_closest_angle], dtype=np.float32)
-                dx, dy = abs(obs[0] - 1), abs(obs[1] - 0.5)
-                d = math.sqrt(dx ** 2 + dy ** 2)
-                # reach the goal
-                if self.is_goal_reached(prey_location):
-                    reward = 100
-                    done = True
-                else:
-                    reward = -d
-                if captured:
-                    truncated = True
-                    reward = -500
-                info = {"is success": done, "is truncated": truncated}
-                self.current_step += 1
-                if self.current_step > self.max_step:
-                    truncated = True
-                self.current_episode_reward += reward
-                if done or truncated:
-                    self.episode_reward_history.append(self.current_episode_reward)
-                    self.current_episode_reward = 0
+            dx, dy = abs(obs[0] - 1), abs(obs[1] - 0.5)
+            d = math.sqrt(dx ** 2 + dy ** 2)
+            # reach the goal
+            if self.is_goal_reached(prey_location):
+                reward = 100
+                done = True
+            else:
+                reward = -d
+            if captured:
+                truncated = True
+                reward = -500
+            info = {"is success": done, "is truncated": truncated}
+            self.current_step += 1
+            if self.current_step > self.max_step:
+                truncated = True
+            self.current_episode_reward += reward
+            if done or truncated:
+                self.episode_reward_history.append(self.current_episode_reward)
+                self.current_episode_reward = 0
         else:
             self.model.step()
             location, theta, goal_location, goal_reached, closest_occlusions = self.get_observation()
