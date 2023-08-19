@@ -1,3 +1,5 @@
+import copy
+
 from gym_env import Environment
 #from gym_env_6obs import Environment
 #from gym_env_predator import Environment
@@ -39,12 +41,12 @@ def check():
 
 def random_policy():
     done = False
-    env = Environment(freq=100, has_predator=False)
+    env = Environment(freq=100, has_predator=True,max_step=500,e=9)
     env.reset()
     #while not done:
-    for i in range(5000):
-        obs, reward, done, _, _ = env.step([1, 0])
-        if i%20==0:
+    for i in range(50000):
+        obs, reward, done, _, _ = env.step(env.action_space.sample())
+        if i%500==0:
             env.reset()
         #obs, reward, done, _, _ = wrapped_env.step(wrapped_env.action_space.sample())
         env.show()
@@ -67,11 +69,15 @@ def PPO_train():
     plot(env.episode_reward_history, name="16_05_reward-100_PPO")
     model.save("1605PPO_model")
     env.close()
+
 def SAC_train_random_env():
     # we train it on 0-19, and test it on 20-30
-    env = Environment(e=5, has_predator=False, max_step=300, env_type="train")
+    env = Environment(e=5, has_predator=True, max_step=300, env_type="train")
     sigma = 0.1 # Adjust this value to increase the noise level
-    action_noise = NormalActionNoise(mean=np.zeros(env.action_space.shape), sigma=sigma * np.ones(env.action_space.shape))
+    action_noise_mean_scale = 0.24 * 0.3
+    action_noise = NormalActionNoise(mean=action_noise_mean_scale * np.ones(env.action_space.shape),
+                                     sigma=sigma * np.ones(env.action_space.shape))
+    #action_noise = NormalActionNoise(mean=np.zeros(env.action_space.shape), sigma=sigma * np.ones(env.action_space.shape))
     model = SAC("MlpPolicy", # batchsize
                 env,
                 verbose=1,
@@ -84,16 +90,18 @@ def SAC_train_random_env():
                 policy_kwargs={"net_arch": [128, 256, 128]} # the network
                 )
     callback = EarlyStoppingCallback(check_freq=3000, stop_reward=300)
-    model.learn(total_timesteps=1500000, log_interval=10, callback=callback)
-    plot(env.episode_reward_history, name="50_SAC")
-    model.save("50_SAC")
+    model.learn(total_timesteps=2000000, log_interval=10, callback=callback)
+    plot(env.episode_reward_history, name="30_SAC_pre")
+    model.save("30_SAC_pre")
     env.close()
 
 def SAC_train():
     env = Environment("17_09", freq=100, has_predator=False, max_step=300)
     env.reset()
     sigma = 0.1 # Adjust this value to increase the noise level
-    action_noise = NormalActionNoise(mean=np.zeros(env.action_space.shape), sigma=sigma * np.ones(env.action_space.shape))
+    # 0.24-0.23
+    action_noise_mean_scale = 0.24 * 0.3
+    action_noise = NormalActionNoise(mean=action_noise_mean_scale*np.ones(env.action_space.shape), sigma=sigma * np.ones(env.action_space.shape))
     model = SAC("MlpPolicy", # batchsize
                 env,
                 verbose=1,
@@ -131,22 +139,29 @@ def plot(data, name ="result"):
 def result_visualization():
     # from stable_baselines3.common.evaluation import evaluate_policy
     # env_type="train"
-    env = Environment(freq=100, has_predator=False, max_step=250, env_type="train")
+    env = Environment(freq=100, has_predator=False, max_step=2500, env_type="test")
     #loaded_model = SAC.load("1601_SAC_pre-tun.zip")
     #model = SAC("MlpPolicy", verbose=1, env = env, seed=123, learning_rate=0.0003)
-    loaded_model = SAC.load("50_SAC_pre-tun-1")
+    loaded_model = SAC.load("50_SAC")
     #loaded_model = PPO.load("16_04_predator_PPO.zip")
     #model.set_parameters("stable_sac")
     obs, _ = env.reset()
     #obs, _ = wrapped_env.reset()
     done = False
     tr = False
+    all_action = []
     while not (done or tr):
+        #if
+
         action, _states = loaded_model.predict(obs, deterministic=True)
+        all_action.append(copy.deepcopy(action))
+        rand_noise = np.random.randn(*action.shape)/2
+        action += rand_noise
         # action, _states = model.predict(obs)
         obs, reward, done, tr, _ = env.step(action)
         env.show()
         if done:
+            print(F"Mean of actions is: {np.mean(all_action)}")
             # obs,_ = wrapped_env.reset()
             env.close()
     env.close()
@@ -171,8 +186,8 @@ def check_prediction():
 
 if __name__ == "__main__":
     #check()
-    SAC_train_random_env() # SAC_train()
-    # result_visualization()
+    # SAC_train_random_env() # SAC_train()
+    result_visualization()
     # random_policy()
     #evaluate()
     #check_prediction()
