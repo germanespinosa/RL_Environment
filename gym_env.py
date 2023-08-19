@@ -157,7 +157,7 @@ class Environment(Env):
                 reward = -d
             if captured:
                 truncated = True
-                reward = -500
+                reward = -200
             info = {"is success": done, "is truncated": truncated}
             self.current_step += 1
             if self.current_step > self.max_step:
