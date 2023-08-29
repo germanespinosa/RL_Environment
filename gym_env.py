@@ -10,7 +10,7 @@ import numpy as np
 
 
 class Environment(Env):
-    def __init__(self, e=5,
+    def __init__(self, e: int = 5,
                  freq: int = 100,
                  has_predator: bool = False,
                  real_time: bool = False,
@@ -19,9 +19,9 @@ class Environment(Env):
                  predator_speed: float = 1.0,
                  env_type: str = "train"):
         if env_type == "train":
-            world_name = "%02i_%02i" % (random.randint(0, 19), e)
-        else:
-            world_name = "%02i_%02i" % (random.randint(20, 21), e)
+            world_name = "%02i_%02i" % (random.randint(0, 18), e)
+        elif env_type == "test":
+            world_name = "%02i_%02i" % (random.randint(19, 19), e)
         self.freq = freq
         self.real_time = real_time
         self.prey_agent = prey_agent
@@ -31,9 +31,7 @@ class Environment(Env):
         self.model = Model(pworld=self.world, freq=self.freq, real_time=self.real_time)
         self.goal_location = Location(1, .5)
         self.start_location = Location(0, .5)
-        self.observation_space = spaces.Box(-np.inf, np.inf, (11,), dtype=np.float32)
-        if has_predator:
-            self.observation_space = spaces.Box(-np.inf, np.inf, (14,), dtype=np.float32)
+        self.observation_space = spaces.Box(-np.inf, np.inf, (14,), dtype=np.float32)
         self.action_space = spaces.Box(-1, 1, (2,), np.float32)
         self.has_predator = has_predator
         self.max_step = max_step
@@ -137,14 +135,18 @@ class Environment(Env):
             th_closest_distance, th_closest_angle = closest_occlusions[2]
             if pred_location is not None:
                 obs = np.array(
-                    [prey_location.x, prey_location.y, prey_theta, 0.0, 0.0, pred_location.x, pred_location.y,
-                     pred_theta, closest_distance, closest_angle,
+                    [prey_location.x, prey_location.y, prey_theta,
+                     speed, turning,
+                     pred_location.x, pred_location.y, pred_theta,
+                     closest_distance, closest_angle,
                      se_closest_distance, se_closest_angle,
                      th_closest_distance, th_closest_angle], dtype=np.float32)
             else:
                 obs = np.array(
-                    [prey_location.x, prey_location.y, prey_theta, 0.0, 0.0, -1.0, -1.0, 0.0, closest_distance,
-                     closest_angle,
+                    [prey_location.x, prey_location.y, prey_theta,
+                     0.0, 0.0,
+                     -1.0, -1.0, 0.0,
+                     closest_distance, closest_angle,
                      se_closest_distance, se_closest_angle,
                      th_closest_distance, th_closest_angle], dtype=np.float32)
             dx, dy = abs(obs[0] - 1), abs(obs[1] - 0.5)
@@ -173,9 +175,12 @@ class Environment(Env):
             se_closest_distance, se_closest_angle = closest_occlusions[1]
             th_closest_distance, th_closest_angle = closest_occlusions[2]
             obs = np.array(
-                [location.x, location.y, theta, 0.0, 0.0, closest_distance, closest_angle, se_closest_distance,
-                 se_closest_angle, th_closest_distance, th_closest_angle],
-                dtype=np.float32)
+                [location.x, location.y, theta,
+                 speed, turning,
+                 -1.0, -1.0, 0,
+                 closest_distance, closest_angle,
+                 se_closest_distance, se_closest_angle,
+                 th_closest_distance, th_closest_angle],dtype=np.float32)
             dx = abs(obs[0] - 1)
             dy = abs(obs[1] - 0.5)
             d = math.sqrt(dx ** 2 + dy ** 2)
@@ -199,9 +204,9 @@ class Environment(Env):
         plt.close(fig=None)
         e = self.e  # Assuming 'e' is an instance variable
         if self.env_type == "train":
-            world_name = "%02i_%02i" % (random.randint(0, 19), e)
+            world_name = "%02i_%02i" % (random.randint(0, 18), e)
         else:
-            world_name = "%02i_%02i" % (random.randint(20, 21), e)
+            world_name = "%02i_%02i" % (random.randint(19, 19), e)
         self.world = World.get_from_parameters_names("hexagonal", "canonical", world_name)
         self.model = Model(pworld=self.world, freq=self.freq, real_time=self.real_time)
         self.goal_location = Location(1, .5)
@@ -256,12 +261,17 @@ class Environment(Env):
             th_closest_distance, th_closest_angle = closest_occlusions[2]
             if pred_location is not None:
                 obs = np.array(
-                    [prey_location.x, prey_location.y, prey_theta, 0.0, 0.0, pred_location.x, pred_location.y,
-                     pred_theta, closest_distance, closest_angle,
+                    [prey_location.x, prey_location.y, prey_theta,
+                     0.0, 0.0,
+                     pred_location.x, pred_location.y, pred_theta,
+                     closest_distance, closest_angle,
                      se_closest_distance, se_closest_angle,
                      th_closest_distance, th_closest_angle], dtype=np.float32)
             else:
-                obs = np.array([prey_location.x, prey_location.y, prey_theta, 0.0, 0.0, -1.0, -1.0, 0.0, closest_distance, closest_angle,
+                obs = np.array([prey_location.x, prey_location.y, prey_theta,
+                                0.0, 0.0,
+                                -1.0, -1.0, 0.0,
+                                closest_distance, closest_angle,
                                 se_closest_distance, se_closest_angle,
                                 th_closest_distance, th_closest_angle], dtype=np.float32)
         else:
@@ -273,6 +283,7 @@ class Environment(Env):
             obs = np.array(
                 [location.x, location.y, theta,
                  0.0, 0.0,
+                 -1.0, -1.0, 0.0,
                  closest_distance, closest_angle,
                  se_closest_distance, se_closest_angle,
                  th_closest_distance, th_closest_angle],
