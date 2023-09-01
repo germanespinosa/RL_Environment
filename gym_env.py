@@ -144,7 +144,7 @@ class Environment(Env):
             else:
                 obs = np.array(
                     [prey_location.x, prey_location.y, prey_theta,
-                     0.0, 0.0,
+                     speed, turning,
                      -1.0, -1.0, 0.0,
                      closest_distance, closest_angle,
                      se_closest_distance, se_closest_angle,
