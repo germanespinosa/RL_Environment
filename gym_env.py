@@ -12,7 +12,7 @@ import numpy as np
 class Environment(Env):
     def __init__(self, e: int = 5,
                  freq: int = 100,
-                 has_predator: bool = False,
+                 has_predator = False,
                  real_time: bool = False,
                  prey_agent: Agent = None,
                  max_step: int = 200,
@@ -221,7 +221,9 @@ class Environment(Env):
                                                    color="g",
                                                    alpha=.5,
                                                    radius=self.goal_threshold)
-
+        if self.has_predator == "random":
+            random_number = random.random()
+            self.has_predator = random_number > 0.5
         if self.has_predator:
             paths_builder = Paths_builder.get_from_name("hexagonal", world_name)
             self.predator = Predator(self.world,
