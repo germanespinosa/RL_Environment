@@ -17,7 +17,8 @@ class Environment(Env):
                  prey_agent: Agent = None,
                  max_step: int = 200,
                  predator_speed: float = 1.0,
-                 env_type: str = "train"):
+                 env_type: str = "train",
+                 env_random: bool = False):
         if env_type == "train":
             world_name = "%02i_%02i" % (random.randint(0, 18), e)
         elif env_type == "test":
@@ -26,6 +27,7 @@ class Environment(Env):
         self.real_time = real_time
         self.prey_agent = prey_agent
         self.env_type = env_type
+        self.env_random = env_random
         self.e = e
         self.world = World.get_from_parameters_names("hexagonal", "canonical", world_name)
         self.model = Model(pworld=self.world, freq=self.freq, real_time=self.real_time)
@@ -159,7 +161,7 @@ class Environment(Env):
                 reward = -d
             if captured:
                 truncated = True
-                reward = -200
+                reward = -50
             info = {"is success": done, "is truncated": truncated}
             self.current_step += 1
             if self.current_step > self.max_step:
@@ -221,7 +223,7 @@ class Environment(Env):
                                                    color="g",
                                                    alpha=.5,
                                                    radius=self.goal_threshold)
-        if self.has_predator == "random":
+        if self.env_random:
             random_number = random.random()
             self.has_predator = random_number > 0.5
         if self.has_predator:
