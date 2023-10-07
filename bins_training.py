@@ -1,7 +1,6 @@
-from gym_env_predator import Environment
+from gym_env_bins import Environment
 import numpy as np
-from stable_baselines3 import PPO
-from stable_baselines3 import SAC
+from stable_baselines3 import PPO,DQN,SAC
 from stable_baselines3.common import env_checker
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.noise import NormalActionNoise
@@ -36,31 +35,36 @@ def check():
 
 def random_policy():
     done = False
-    env = Environment("16_06", freq=100, has_predator=True)
+    env = Environment(e=3, has_predator=True, max_step=300, env_type="train", predator_speed=0.2)
     env.reset()
     #while not done:
     for i in range(5000):
-        obs, reward, done, _, _ = env.step([1, 0])
+        obs, reward, done, _, _ = env.step(env.action_space.sample())
         #obs, reward, done, _, _ = wrapped_env.step(wrapped_env.action_space.sample())
         env.show()
     env.close()
 
 
-def PPO_train():
-    env = Environment("16_05", freq=100, has_predator=True, max_step=250)
+def DQN_train():
+    env = Environment(e=2, has_predator=True, max_step=300, env_type="train", predator_speed=0.2)
     env.reset()
-    # PPO has no action noise, but We can apply that in the step method. Also, ent_coef ent_coef=0.01, #seems helpful refers to the policy's entropy which might help exploration
-    model = PPO("MlpPolicy",
+    model = DQN("MlpPolicy",  # Replace MlpPolicy with the policy architecture you want to use
                 env,
                 verbose=1,
-                learning_rate=1e-4,
-                policy_kwargs={"net_arch": [128, 256, 128]},
+                batch_size=1024,
+                learning_rate=3e-4,
+                train_freq=(1, "step"),
+                buffer_size=2500000,
+                replay_buffer_class=ReplayBuffer,
+                exploration_final_eps=0.1,  # Adjust the exploration settings to your liking
+                exploration_fraction=0.1,
+                policy_kwargs={"net_arch": [128, 256, 128]}
                 )
 
-    callback = EarlyStoppingCallback(check_freq=1000, stop_reward=3000)
-    model.learn(total_timesteps=200000, log_interval=10, callback=callback)
-    plot(env.episode_reward_history, name="1601-preppo-05")
-    model.save("1601-preppo-05")
+    callback = EarlyStoppingCallback(check_freq=1000, stop_reward=300)
+    model.learn(total_timesteps=500000, log_interval=10, callback=callback)
+    plot(env.episode_reward_history, name="2_DQN")
+    model.save("2_DQN")
     env.close()
 
 
@@ -105,9 +109,9 @@ def plot(data, name ="result"):
 def result_visualization():
     # from stable_baselines3.common.evaluation import evaluate_policy
     np.random.seed(123)
-    env = Environment("16_07", freq=100, has_predator=True, max_step=3000)
+    env = Environment(e=2, freq=100, has_predator=True, max_step=3000, predator_speed=0.2)
     #model = SAC("MlpPolicy", verbose=1, env = env, seed=123, learning_rate=0.0003)
-    loaded_model = SAC.load("1603_SAC_pre-tun-1")
+    loaded_model = DQN.load("2_DQN.zip")
     obs, _ = env.reset()
     #obs, _ = wrapped_env.reset()
     done = False
@@ -144,7 +148,8 @@ if __name__ == "__main__":
     #check()
     #SAC_train()
     result_visualization()
-    #random_policy()
+    # random_policy()
     #evaluate()
     #check_prediction()
     #PPO_train()
+    # DQN_train()
