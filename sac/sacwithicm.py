@@ -15,9 +15,11 @@ from stable_baselines3.sac.policies import Actor, CnnPolicy, MlpPolicy, MultiInp
 
 SelfSAC = TypeVar("SelfSAC", bound="SAC")
 
+
 class ICM(th.nn.Module):
-    def __init__(self, state_dim, action_dim, encoding_dim=128):
+    def __init__(self, state_dim, action_dim, encoding_dim=128, device="auto"):
         super(ICM, self).__init__()
+        self.device = device
         # Encoder
         self.encoder = th.nn.Sequential(
             th.nn.Linear(state_dim, encoding_dim),
@@ -31,6 +33,8 @@ class ICM(th.nn.Module):
         self.forward_model = th.nn.Sequential(
             th.nn.Linear(encoding_dim + action_dim, encoding_dim)
         )
+        self.to(self.device)
+
     def forward(self, state, action, next_state):
         state_encoding = self.encoder(state)
         next_state_encoding = self.encoder(next_state)
@@ -117,10 +121,10 @@ class SAC(OffPolicyAlgorithm):
         self.ent_coef = ent_coef
         self.target_update_interval = target_update_interval
         self.ent_coef_optimizer: Optional[th.optim.Adam] = None
-        action_dim = self.env.action_space.shape[0]
-        state_dim = self.env.observation_space.shape[0]
-        self.icm = ICM(state_dim, action_dim)
-        self.icm_optimizer = th.optim.Adam(self.icm.parameters(), lr=3e-4)
+        # action_dim = self.env.action_space.shape[0]
+        # state_dim = self.env.observation_space.shape[0]
+        # self.icm = ICM(state_dim, action_dim, device="cpu")
+        # self.icm_optimizer = th.optim.Adam(self.icm.parameters(), lr=3e-4)
 
         if _init_setup_model:
             self._setup_model()
@@ -164,6 +168,11 @@ class SAC(OffPolicyAlgorithm):
         self.actor = self.policy.actor
         self.critic = self.policy.critic
         self.critic_target = self.policy.critic_target
+        action_dim = self.env.action_space.shape[0]
+        state_dim = self.env.observation_space.shape[0]
+        self.icm = ICM(state_dim, action_dim, device="cpu")
+        self.icm_optimizer = th.optim.Adam(self.icm.parameters(), lr=3e-4)
+
 
     def train(self, gradient_steps: int, batch_size: int = 64) -> None:
         # Switch to train mode (this affects batch norm / dropout)
@@ -301,10 +310,13 @@ class SAC(OffPolicyAlgorithm):
         )
 
     def _excluded_save_params(self) -> List[str]:
-        return super()._excluded_save_params() + ["actor", "critic", "critic_target"]  # noqa: RUF005
+        return super()._excluded_save_params() + ["actor", "critic", "critic_target", "icm"]  # noqa: RUF005
 
     def _get_torch_save_params(self) -> Tuple[List[str], List[str]]:
         state_dicts = ["policy", "actor.optimizer", "critic.optimizer"]
+        # Add the ICM parameters to the state dictionary
+        state_dicts.append("icm")
+        state_dicts.append("icm_optimizer")
         if self.ent_coef_optimizer is not None:
             saved_pytorch_variables = ["log_ent_coef"]
             state_dicts.append("ent_coef_optimizer")
