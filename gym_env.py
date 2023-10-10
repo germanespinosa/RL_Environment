@@ -159,9 +159,17 @@ class Environment(Env):
                 done = True
             else:
                 reward = -d
+
+            # # Check if predator is close to the prey and penalize accordingly
+            # danger_threshold = 0.2
+            # dist_pred_x, dist_pred_y = abs(obs[0] - obs[5]), abs(obs[1] - obs[6])
+            # dist_pred = math.sqrt(dist_pred_x ** 2 + dist_pred_y ** 2)
+            # if dist_pred < danger_threshold:
+            #     reward -= danger_threshold - dist_pred
+
             if captured:
                 truncated = True
-                reward = -50
+                reward = -20
             info = {"is success": done, "is truncated": truncated}
             self.current_step += 1
             if self.current_step > self.max_step:
@@ -203,7 +211,7 @@ class Environment(Env):
 
     def reset(self, seed=None):
         import matplotlib.pyplot as plt
-        plt.close(fig=None)
+        plt.close('all')
         e = self.e  # Assuming 'e' is an instance variable
         if self.env_type == "train":
             world_name = "%02i_%02i" % (random.randint(0, 18), e)
