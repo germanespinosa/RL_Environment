@@ -20,7 +20,7 @@ class Environment(Env):
                  env_type: str = "train",
                  env_random: bool = False):
         if env_type == "train":
-            world_name = "%02i_%02i" % (random.randint(5, 5), e)
+            world_name = "%02i_%02i" % (random.randint(0, 18), e)
         elif env_type == "test":
             world_name = "%02i_%02i" % (random.randint(19, 19), e)
         self.freq = freq
@@ -126,6 +126,13 @@ class Environment(Env):
         bin_width = 2.0 / (n_bins - 1)
         continuous_row = -1 + row * bin_width
         continuous_col = -1 + col * bin_width
+        ## Adding noise in eval
+
+        # noise_level, action_shape = 0.5, 2
+        # rand_noise = np.random.randn(action_shape) * noise_level
+        # continuous_row += rand_noise[0]
+        # continuous_col += rand_noise[1]
+
         return continuous_row, continuous_col
 
     def set_action(self, speed: float, turning: float) -> None:
@@ -226,7 +233,7 @@ class Environment(Env):
         plt.close('all')
         e = self.e  # Assuming 'e' is an instance variable
         if self.env_type == "train":
-            world_name = "%02i_%02i" % (random.randint(5, 5), e)
+            world_name = "%02i_%02i" % (random.randint(0, 18), e)
         else:
             world_name = "%02i_%02i" % (random.randint(19, 19), e)
         self.world = World.get_from_parameters_names("hexagonal", "canonical", world_name)
