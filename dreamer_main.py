@@ -7,6 +7,8 @@ from dreamerv2.training.config import CustomEnvConfig
 from dreamerv2.training.trainer import Trainer
 from dreamerv2.training.evaluator import Evaluator
 from gym_bins_env import Environment
+from tqdm import tqdm
+
 
 def main(args):
     env = Environment(e=2, has_predator="True", predator_speed=0.2, max_step=300)
@@ -57,7 +59,7 @@ def main(args):
     best_mean_score = -400
     best_save_path = os.path.join(model_dir, 'models_best.pth')
 
-    for iter in range(1, trainer.config.train_steps):
+    for iter in tqdm(range(1, trainer.config.train_steps), desc="Training Progress"):
         if iter % trainer.config.train_every == 0:
             train_metrics = trainer.train_batch(train_metrics)
         if iter % trainer.config.slow_target_update == 0:
@@ -123,7 +125,7 @@ def plot(data, name ="result"):
 if __name__ == "__main__":
     """there are tonnes of HPs, if you want to do an ablation over any particular one, please add if here"""
     parser = argparse.ArgumentParser()
-    parser.add_argument("--id", type=str, default='0', help='Experiment ID')
+    parser.add_argument("--id", type=str, default='d_10_100', help='Experiment ID')
     parser.add_argument('--seed', type=int, default=123, help='Random seed')
     parser.add_argument('--device', default='cuda', help='CUDA or CPU')
     parser.add_argument('--batch_size', type=int, default=50, help='Batch size')
