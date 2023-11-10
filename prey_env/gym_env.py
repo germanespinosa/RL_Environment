@@ -7,6 +7,7 @@ import random
 from gymnasium import Env
 from gymnasium import spaces
 import numpy as np
+import gc
 
 
 class Environment(Env):
@@ -210,8 +211,14 @@ class Environment(Env):
         return obs, reward, done, truncated, info
 
     def reset(self, seed=None):
-        import matplotlib.pyplot as plt
-        plt.close('all')
+        self.model.clear_memory()
+        # self.model.stop()
+        # del self.world
+        # del self.model
+        # gc.collect()
+        # import matplotlib.pyplot as plt
+        # plt.clf()
+        # plt.close('all')
         e = self.e  # Assuming 'e' is an instance variable
         if self.env_type == "train":
             world_name = "%02i_%02i" % (random.randint(0, 10), e)
