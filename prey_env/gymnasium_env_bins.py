@@ -285,6 +285,8 @@ class Environment(Env):
         # print(world_name)
         self.world.set_occlusions(occlusions)
         self.model.world = self.world
+        self.model.display.world = self.world
+        self.model.display.__draw_cells__()
         #self.model.world = self.world
         self.goal_location = Location(1, .5)
         self.start_location = Location(0, .5)
@@ -294,6 +296,7 @@ class Environment(Env):
                                                    color="g",
                                                    alpha=.5,
                                                    radius=self.goal_threshold)
+
         if self.has_predator:
             self.start()
             prey_location, prey_theta, \
