@@ -10,24 +10,33 @@ import numpy as np
 
 
 class Environment(Env):
-    def __init__(self, e: int = 5,
+    metadata = {"render_modes": ["human", "rgb_array"]}
+    def __init__(self,
+                 e: int = 5,
                  freq: int = 100,
-                 has_predator = False,
+                 has_predator = True,
                  real_time: bool = False,
                  prey_agent: Agent = None,
-                 max_step: int = 200,
-                 predator_speed: float = 1.0,
-                 env_type: str = "train",
-                 env_random: bool = False):
+                 max_step: int = 300,
+                 predator_speed: float = 0.2,
+                 env_type: str = "test",
+                 env_random: bool = False,
+                 penalty: int = -10,
+                 reward: int = 100,
+                 render_mode = None,
+                 action_noise: bool = False):
         if env_type == "train":
             world_name = "%02i_%02i" % (random.randint(0, 10), e)
         elif env_type == "test":
             world_name = "%02i_%02i" % (random.randint(11, 19), e)
         self.freq = freq
+        self.penalty = penalty
+        self.reward = reward
         self.real_time = real_time
         self.prey_agent = prey_agent
         self.env_type = env_type
         self.env_random = env_random
+        self.action_noise = action_noise
         self.e = e
         self.world = World.get_from_parameters_names("hexagonal", "canonical", world_name)
         self.model = Model(pworld=self.world, freq=self.freq, real_time=self.real_time)
@@ -48,6 +57,48 @@ class Environment(Env):
                                                    color="g",
                                                    alpha=.5,
                                                    radius=self.goal_threshold)
+        self.model.add_agent("prey",
+                             self.prey_agent,
+                             Location(0, 0), 0, "b",
+                             pauto_update=self.prey_agent is not None)
+        self.goal_threshold = self.world.implementation.cell_transformation.size / 2
+        self.capture_threshold = self.world.implementation.cell_transformation.size
+        self.goal_area = self.model.display.circle(location=self.goal_location,
+                                                   color="g",
+                                                   alpha=.5,
+                                                   radius=self.goal_threshold)
+        # if self.env_random:
+        #     random_number = random.random()
+        #     self.has_predator = random_number > 0.5
+
+        if self.has_predator:
+            paths_builder = Paths_builder.get_from_name("hexagonal", world_name)
+            self.predator = Predator(self.world,
+                                     ppath_builder=paths_builder,
+                                     pvisibility=self.model.visibility,
+                                     pP_value=2,
+                                     pI_value=0,
+                                     pD_value=0,
+                                     pmax_speed=self.predator_speed,
+                                     pmax_turning_speed=math.pi)
+
+            self.spawn_locations = Location_list()
+            for c in self.world.cells.free_cells():
+                if not self.model.visibility.is_visible(self.start_location, c.location):
+                    self.spawn_locations.append(c.location)
+            self.model.add_agent("predator", self.predator, Location(0, 0), 0, "r")
+            self.predator_destination = self.model.display.circle(location=Location(0,0),
+                                                                  color="b",
+                                                                  alpha=.5,
+                                                                  radius=0.01)
+            self.predator_destination_cell = self.model.display.circle(location=Location(0,0),
+                                                                       color="g",
+                                                                       alpha=.5,
+                                                                       radius=0.02)
+            self.predator_capture_area = self.model.display.circle(location=Location(0,0),
+                                                                   color="r",
+                                                                   alpha=.5,
+                                                                   radius=self.capture_threshold)
 
     def is_goal_reached(self, prey_location: Location):
         return prey_location.dist(self.goal_location) <= self.goal_threshold
@@ -127,11 +178,12 @@ class Environment(Env):
         continuous_row = -1 + row * bin_width
         continuous_col = -1 + col * bin_width
 
-        # Adding noise in eval
-        noise_level, action_shape = 0.5, 2
-        rand_noise = np.random.randn(action_shape) * noise_level
-        continuous_row += rand_noise[0]
-        continuous_col += rand_noise[1]
+
+        if self.action_noise:
+            noise_level, action_shape = 0.5, 2
+            rand_noise = np.random.randn(action_shape) * noise_level
+            continuous_row += rand_noise[0]
+            continuous_col += rand_noise[1]
 
         return continuous_row, continuous_col
 
@@ -174,21 +226,14 @@ class Environment(Env):
             d = math.sqrt(dx ** 2 + dy ** 2)
             # reach the goal
             if self.is_goal_reached(prey_location):
-                reward = 100
+                reward = self.reward
                 done = True
             else:
                 reward = -d
 
-            # # Check if predator is close to the prey and penalize accordingly
-            # danger_threshold = 0.2
-            # dist_pred_x, dist_pred_y = abs(obs[0] - obs[5]), abs(obs[1] - obs[6])
-            # dist_pred = math.sqrt(dist_pred_x ** 2 + dist_pred_y ** 2)
-            # if dist_pred < danger_threshold:
-            #     reward -= danger_threshold - dist_pred
-
             if captured:
                 truncated = True
-                reward = -10
+                reward = self.penalty
             info = {"is success": done, "is truncated": truncated}
             self.current_step += 1
             if self.current_step > self.max_step:
@@ -214,7 +259,7 @@ class Environment(Env):
             dy = abs(obs[1] - 0.5)
             d = math.sqrt(dx ** 2 + dy ** 2)
             if self.is_goal_reached(location):
-                reward = 100
+                reward = self.reward
                 done = True
             else:
                 reward = -d
@@ -228,60 +273,28 @@ class Environment(Env):
                 self.current_episode_reward = 0
         return obs, reward, done, truncated, info
 
-    def reset(self, seed=None):
-        import matplotlib.pyplot as plt
-        plt.close('all')
+    def reset(self, seed=None, options = None):
+        self.complete = True
+        env_type = self.env_type
         e = self.e  # Assuming 'e' is an instance variable
-        if self.env_type == "train":
+        if env_type == "train":
             world_name = "%02i_%02i" % (random.randint(0, 10), e)
-        else:
+        elif env_type == "test":
             world_name = "%02i_%02i" % (random.randint(11, 19), e)
-        self.world = World.get_from_parameters_names("hexagonal", "canonical", world_name)
-        self.model = Model(pworld=self.world, freq=self.freq, real_time=self.real_time)
+        occlusions = Cell_group_builder.get_from_name("hexagonal", world_name, "occlusions")
+        # print(world_name)
+        self.world.set_occlusions(occlusions)
+        self.model.world = self.world
+        #self.model.world = self.world
         self.goal_location = Location(1, .5)
         self.start_location = Location(0, .5)
-        self.model.add_agent("prey",
-                             self.prey_agent,
-                             Location(0, 0), 0, "b",
-                             pauto_update=self.prey_agent is not None)
         self.goal_threshold = self.world.implementation.cell_transformation.size / 2
         self.capture_threshold = self.world.implementation.cell_transformation.size
         self.goal_area = self.model.display.circle(location=self.goal_location,
                                                    color="g",
                                                    alpha=.5,
                                                    radius=self.goal_threshold)
-        if self.env_random:
-            random_number = random.random()
-            self.has_predator = random_number > 0.5
         if self.has_predator:
-            paths_builder = Paths_builder.get_from_name("hexagonal", world_name)
-            self.predator = Predator(self.world,
-                                     ppath_builder=paths_builder,
-                                     pvisibility=self.model.visibility,
-                                     pP_value=2,
-                                     pI_value=0,
-                                     pD_value=0,
-                                     pmax_speed=self.predator_speed,
-                                     pmax_turning_speed=math.pi)
-
-            self.spawn_locations = Location_list()
-            for c in self.world.cells.free_cells():
-                if not self.model.visibility.is_visible(self.start_location, c.location):
-                    self.spawn_locations.append(c.location)
-            self.model.add_agent("predator", self.predator, Location(0, 0), 0, "r")
-            self.predator_destination = self.model.display.circle(location=Location(0,0),
-                                                                  color="b",
-                                                                  alpha=.5,
-                                                                  radius=0.01)
-            self.predator_destination_cell = self.model.display.circle(location=Location(0,0),
-                                                                       color="g",
-                                                                       alpha=.5,
-                                                                       radius=0.02)
-            self.predator_capture_area = self.model.display.circle(location=Location(0,0),
-                                                                   color="r",
-                                                                   alpha=.5,
-                                                                   radius=self.capture_threshold)
-            # start has to be here, after all the setup()
             self.start()
             prey_location, prey_theta, \
             goal_location, pred_location, \
@@ -335,5 +348,11 @@ class Environment(Env):
             self.predator_capture_area.set(center=(self.model.agents_data["predator"].location.x, self.model.agents_data["predator"].location.y), color="r")
         self.model.show()
 
+    def render(self):
+        return self.show()
+
     def seed(self, seed=123):
         self.np_random = np.random.default_rng(seed)
+
+    def recorded_frames(self):
+        pass
