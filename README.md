@@ -3,7 +3,10 @@
 ## Low Entropy 10%
 
 ```{python}
-from gym_env import Environment
+from prey_env import gymnasium_Environment_C as Environment
+from prey_env import gymnasium_Environment_D as Environment
+from prey_env import gym_Environment_D as Environment
+
 # e = 1: Entropy 10%
 env = Environment(e = 1, freq=100, has_predator=True, max_step=250, env_type = "train", predator_speed = 1.0)
 env.reset()
@@ -26,7 +29,9 @@ env.close()
 ## High Entorpy 90%
 
 ```{python}
-from gym_env import Environment
+from prey_env import gymnasium_Environment_C as Environment
+from prey_env import gymnasium_Environment_D as Environment
+from prey_env import gym_Environment_D as Environment
 env = Environment(e = 9, freq=100, has_predator=True, max_step=250, env_type = "train")
 env.reset()
 # Random

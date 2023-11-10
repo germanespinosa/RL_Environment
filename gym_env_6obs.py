@@ -115,7 +115,6 @@ class Environment(Env):
         obs = np.array([location.x, location.y, theta, action[0], action[1], goal_location.x, goal_location.y], dtype=np.float32)
         dx = abs(obs[0] - 1)
         dy = abs(obs[1] - 0.5)
-        # d = location.dist(goal_location)
         d = math.sqrt(dx ** 2 + dy ** 2)
         # d_reward = -d
         if self.is_goal_reached(location):
@@ -133,7 +132,7 @@ class Environment(Env):
             self.current_episode_reward = 0
         return obs, reward, done, truncated, info
 
-    def reset(self, seed=None):
+    def reset(self, seed = None):
         self.start()
         location, theta, goal_location, goal_reached = self.get_observation()
         obs = np.array([location.x, location.y, theta, 0.0, 0.0, goal_location.x, goal_location.y], dtype=np.float32)

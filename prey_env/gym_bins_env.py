@@ -4,8 +4,8 @@ from Model import Model
 from myPaths import *
 from cellworld import *
 import random
-from gymnasium import Env
-from gymnasium import spaces
+from gym import Env
+from gym import spaces
 import numpy as np
 
 
@@ -20,9 +20,9 @@ class Environment(Env):
                  env_type: str = "train",
                  env_random: bool = False):
         if env_type == "train":
-            world_name = "%02i_%02i" % (random.randint(0, 18), e)
+            world_name = "%02i_%02i" % (random.randint(0, 10), e)
         elif env_type == "test":
-            world_name = "%02i_%02i" % (random.randint(19, 19), e)
+            world_name = "%02i_%02i" % (random.randint(11, 19), e)
         self.freq = freq
         self.real_time = real_time
         self.prey_agent = prey_agent
@@ -34,7 +34,7 @@ class Environment(Env):
         self.goal_location = Location(1, .5)
         self.start_location = Location(0, .5)
         self.observation_space = spaces.Box(-np.inf, np.inf, (14,), dtype=np.float32)
-        self.action_space = spaces.Box(-1, 1, (2,), np.float32)
+        self.action_space = spaces.Discrete(100)
         self.has_predator = has_predator
         self.max_step = max_step
         self.current_step = 0
@@ -104,9 +104,6 @@ class Environment(Env):
     def is_complete(self):
         return self.complete
 
-    def set_action(self, speed: float, turning: float) -> None:
-        action = AgentAction(speed, turning)
-        self.model.set_agent_action("prey", action)
 
     def run(self) -> None:
         self.start()
@@ -120,11 +117,30 @@ class Environment(Env):
             predator_theta = math.pi * 2 * random.random()
             self.model.set_agent_position("predator", predator_location, predator_theta)
 
+    def map_discrete_to_continuous(self, discrete_val, n_bins=10):
+        # Convert the single discrete value into two discrete values
+        # assuming a 10x10 grid
+        row = discrete_val // n_bins  # Integer division to get the row
+        col = discrete_val % n_bins  # Modulus to get the column
+        # Now map each discrete value to the continuous range [-1, 1]
+        bin_width = 2.0 / (n_bins - 1)
+        continuous_row = -1 + row * bin_width
+        continuous_col = -1 + col * bin_width
+        noise_level, action_shape = 0, 2
+        rand_noise = np.random.randn(action_shape) * noise_level
+        continuous_row += rand_noise[0]
+        continuous_col += rand_noise[1]
+        return continuous_row, continuous_col
+
+    def set_action(self, speed: float, turning: float) -> None:
+        action = AgentAction(speed, turning)
+        self.model.set_agent_action("prey", action)
+
     def step(self, action):
         reward = 0
         info = {}
         done, truncated = False, False
-        speed, turning = action[0], action[1]
+        speed, turning = self.map_discrete_to_continuous(action)
         self.set_action(speed, turning)
         if self.has_predator:
             self.model.step()
@@ -159,9 +175,17 @@ class Environment(Env):
                 done = True
             else:
                 reward = -d
+
+            # # Check if predator is close to the prey and penalize accordingly
+            # danger_threshold = 0.2
+            # dist_pred_x, dist_pred_y = abs(obs[0] - obs[5]), abs(obs[1] - obs[6])
+            # dist_pred = math.sqrt(dist_pred_x ** 2 + dist_pred_y ** 2)
+            # if dist_pred < danger_threshold:
+            #     reward -= danger_threshold - dist_pred
+
             if captured:
                 truncated = True
-                reward = -50
+                reward = -10
             info = {"is success": done, "is truncated": truncated}
             self.current_step += 1
             if self.current_step > self.max_step:
@@ -201,14 +225,14 @@ class Environment(Env):
                 self.current_episode_reward = 0
         return obs, reward, done, truncated, info
 
-    def reset(self, seed=None):
+    def reset(self):
         import matplotlib.pyplot as plt
-        plt.close(fig=None)
+        plt.close('all')
         e = self.e  # Assuming 'e' is an instance variable
         if self.env_type == "train":
-            world_name = "%02i_%02i" % (random.randint(0, 18), e)
+            world_name = "%02i_%02i" % (random.randint(1, 10), e)
         else:
-            world_name = "%02i_%02i" % (random.randint(19, 19), e)
+            world_name = "%02i_%02i" % (random.randint(11, 19), e)
         self.world = World.get_from_parameters_names("hexagonal", "canonical", world_name)
         self.model = Model(pworld=self.world, freq=self.freq, real_time=self.real_time)
         self.goal_location = Location(1, .5)
@@ -294,7 +318,7 @@ class Environment(Env):
                 dtype=np.float32)
         self.current_step = 1
         self.stop()
-        return obs, {}
+        return obs
 
     def stop(self) -> None:
         self.model.stop()

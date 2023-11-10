@@ -8,7 +8,7 @@ from cellworld import *
 e = Environment("21_05", freq=100, has_predator=True, real_time=False)
 
 counter = 0
-for i in range(20):
+for i in range(2):
     #runs the environment
     e.start()
 
@@ -25,10 +25,10 @@ for i in range(20):
         e.step()
         post_o = e.get_observation()
         counter+=1
-        # if counter % 100 == 0 :
-        e.show()
-        print(pre_o, post_o)
-        # computes the remaining time for 1/10 of a second to make the action interval consistent.
+        if counter % 100 == 0 :
+            e.show()
+            print(pre_o, post_o)
+        #computes the remaining time for 1/10 of a second to make the action interval consistent.
         # observation format: Tuple
         # [prey location, prey theta, goal location, predator location, predator theta, captured, goal_reached]
         # prey location: Type Location

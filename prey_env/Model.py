@@ -2,7 +2,8 @@ import time
 from threading import Thread
 from cellworld import *
 from Agent import Agent, AgentData, AgentAction
-
+import gc
+import matplotlib.pyplot as plt
 class Model:
 
     def __init__(self,
@@ -98,7 +99,8 @@ class Model:
                                location=agent_data.location,
                                rotation=to_degrees(agent_data.theta),
                                color=agent_data.color,
-                               size=15)
+                               size=15, # show_trajectory=False
+                               )
         self.display.update()
 
     def set_agent_position(self, pagent_name: str,
@@ -122,3 +124,28 @@ class Model:
                                                   pcolor=pcolor,
                                                   pauto_update=pauto_update)
         self.display.set_agent_marker(pagent_name, Agent_markers.arrow())
+
+    def clear_memory(self):
+        # Stop any running threads
+        self.stop()
+
+        # Clear agents and agent data
+        self.agents.clear()
+        self.agents_data.clear()
+
+        # Delete display object
+        del self.display
+
+        # Close any matplotlib figures
+        plt.clf()
+        plt.close('all')
+
+        # Nullify references
+        self.world = None
+        self.thread = None
+        self.arena_polygon = None
+        self.occlusions_polygons = None
+        self.visibility = None
+
+        # Invoke garbage collector to free up memory
+        gc.collect()
