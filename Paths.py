@@ -16,7 +16,7 @@ class Paths_builder (JsonObject):
         return Paths_builder.parse(json_dictionary=get_resource("paths", world_configuration_name, occlussions_name, path_type_name))
 
 
-class Paths:
+class MyPaths:
     def __init__(self, builder: Paths_builder, world: World):
         self.moves = builder.moves
         self.steps = builder.steps

@@ -98,8 +98,7 @@ class Model:
                                location=agent_data.location,
                                rotation=to_degrees(agent_data.theta),
                                color=agent_data.color,
-                               size=15,
-                               show_trajectory=False)
+                               size=15)
         self.display.update()
 
     def set_agent_position(self, pagent_name: str,
