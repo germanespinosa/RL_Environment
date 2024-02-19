@@ -1,6 +1,6 @@
 import time
-from Environment import Environment
-from Agent import Agent, AgentAction
+from prey_env.Environment import (Environment)
+from prey_env.Agent import Agent, AgentAction
 from cellworld import *
 
 #creates the environment
